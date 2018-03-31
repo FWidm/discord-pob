@@ -1,4 +1,8 @@
-from models import Skill, Item, Build, ItemSlot, Gem
+from models.build import Build
+from models.gem import Gem
+from models.item import Item
+from models.item_slot import ItemSlot
+from models.skill import Skill
 from util.logging import log
 from util.poeurl import shrink_tree_url
 

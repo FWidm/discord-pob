@@ -1,5 +1,5 @@
 from bot.consts.thresholds import OutputThresholds
-from models import Build
+from models.build import Build
 
 
 def get_resistances(build: Build, force_display=False):

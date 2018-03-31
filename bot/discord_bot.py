@@ -7,11 +7,14 @@ import config
 import util
 from bot import pob_output
 from bot import pob_parser
+from bot.db.model import BuildStatistics
 from util import pastebin
 from util.logging import log
+from bot.db import setup
 
 bot = commands.Bot(command_prefix='!', description="x")
 bot.remove_command('help')
+session = setup.init()
 
 
 @bot.event
@@ -28,6 +31,12 @@ async def pob(ctx, *, key):
 
     await bot.send_message(ctx.message.channel, embed=embed)
     # await ctx.say(arg)
+
+
+@bot.command()
+async def showdb():
+    buildstats = session.query(BuildStatistics).all()
+    await bot.say("DB Content: {}".format(buildstats))
 
 
 @bot.event
@@ -75,8 +84,14 @@ def parse_pob(author, content, minify=False):
         if xml:
             build = pob_parser.parse_build(xml)
             # print(build)
-
+            statistics = BuildStatistics(author=author.name, role="DEBUG", character=build.class_name,
+                                         ascendency=build.ascendency_name, main_skill=build.get_active_gem_name(),
+                                         level=build.level)
+            # statistics.stats = {'a': "0", 'b': "1"}
+            session.add(statistics)
+            print(",".join([role.name for role in author.roles]))
             embed = pob_output.generate_response(author, build, minified=minify)
+            session.commit()
 
             log.debug("embed={}; thumbnail={}; length={}".format(embed, embed.thumbnail, embed.__sizeof__()))
             return embed

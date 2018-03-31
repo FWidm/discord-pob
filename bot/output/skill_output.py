@@ -1,4 +1,4 @@
-from models import Skill
+from models.skill import Skill
 
 
 def get_main_skill(build):

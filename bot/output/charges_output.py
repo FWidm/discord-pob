@@ -1,4 +1,4 @@
-from models import Build
+from models.build import Build
 
 
 def get_charges(build: Build, charge_types=['Endurance', 'Frenzy', 'Power']):

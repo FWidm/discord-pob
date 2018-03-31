@@ -2,7 +2,9 @@ from discord import Embed
 
 import config
 from bot.output import defense_output, config_output, charges_output, skill_output, offense_output
-from models import Build, Gem, Skill
+from models.build import Build
+from models.gem import Gem
+from models.skill import Skill
 
 
 def wrap_codeblock(string, lang='css'):

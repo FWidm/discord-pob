@@ -7,4 +7,5 @@ if __name__ == '__main__':
     if token:
         # initialize_logging()
         log.info("Starting pob discord bot...")
+
         bot.run(token)
