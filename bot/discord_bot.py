@@ -2,6 +2,7 @@ from urllib.error import HTTPError
 
 import discord
 from discord.ext import commands
+from sqlalchemy import func
 
 import config
 import util
@@ -34,33 +35,44 @@ async def pob(ctx, *, key):
 
 
 @bot.command()
-async def showdb():
+async def show_all():
     buildstats = session.query(BuildStatistics).all()
     await bot.say("DB Content: {}".format(buildstats))
 
 
-@bot.event
-async def on_message(message):
-    """
-    Handle message events
-    :param message:
-    :return: None
-    """
-    # call bot commands, if not a bot command, check the message for pastebins
-    # better way to do this would probably be to create the context, then check if its valid, then invoke it. If its valid,its a command, if not, its not. You could backport this to async pretty ez
+@bot.command()
+async def overview():
+    asc_count = session.query(BuildStatistics.ascendency, func.count(BuildStatistics.id)). \
+        group_by(BuildStatistics.ascendency).all()
+    rowcount = session.query(BuildStatistics).count()
+    str = ""
+    for asc in asc_count:
+        str += "{}: {}/{} ({}%)\n".format(asc[0], asc[1], rowcount, asc[1] / rowcount)
+    print(str)
+    await bot.say(str)
 
-    # todo: replace async with rewrite of the bot, then use on_command_completion
-    if message.channel.name in config.active_channels \
-            and not util.starts_with("!pob", message.content[:4]) \
-            and "pastebin.com/" in message.content:
-        # check if valid xml
-        # send message
-        log.debug("A| {}: {}".format(message.channel, message.content))
-        embed = parse_pob(message.author, message.content, minify=True)
-        if embed:
-            await bot.send_message(message.channel, embed=embed)
-    else:
-        await bot.process_commands(message)
+    @bot.event
+    async def on_message(message):
+        """
+        Handle message events
+        :param message:
+        :return: None
+        """
+        # call bot commands, if not a bot command, check the message for pastebins
+        # better way to do this would probably be to create the context, then check if its valid, then invoke it. If its valid,its a command, if not, its not. You could backport this to async pretty ez
+
+        # todo: replace async with rewrite of the bot, then use on_command_completion
+        if message.channel.name in config.active_channels \
+                and not util.starts_with("!pob", message.content[:4]) \
+                and "pastebin.com/" in message.content:
+            # check if valid xml
+            # send message
+            log.debug("A| {}: {}".format(message.channel, message.content))
+            embed = parse_pob(message.author, message.content, minify=True)
+            if embed:
+                await bot.send_message(message.channel, embed=embed)
+        else:
+            await bot.process_commands(message)
 
 
 def parse_pob(author, content, minify=False):
@@ -86,7 +98,7 @@ def parse_pob(author, content, minify=False):
             # print(build)
             statistics = BuildStatistics(author=author.name, role="DEBUG", character=build.class_name,
                                          ascendency=build.ascendency_name, main_skill=build.get_active_gem_name(),
-                                         level=build.level)
+                                         level=build.level, paste_key=paste_key)
             # statistics.stats = {'a': "0", 'b': "1"}
             session.add(statistics)
             print(",".join([role.name for role in author.roles]))

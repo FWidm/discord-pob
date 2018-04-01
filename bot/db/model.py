@@ -14,6 +14,7 @@ class BuildStatistics(Base):
     ascendency = Column(String(20))
     main_skill = Column(String(20))
     level = Column(Integer)
+    paste_key = Column(String(20))
     stats = relationship("Stat",
                          collection_class=attribute_mapped_collection('stat_key'),
                          backref="item",
