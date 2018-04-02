@@ -1,6 +1,6 @@
 from sqlalchemy import Integer, Column, String, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.orm.collections import attribute_mapped_collection
+from sqlalchemy.orm.collections import attribute_mapped_collection, mapped_collection
 
 from bot.db.setup import Base
 
@@ -16,7 +16,7 @@ class BuildStatistics(Base):
     level = Column(Integer)
     paste_key = Column(String(20))
     stats = relationship("Stat",
-                         collection_class=attribute_mapped_collection('stat_key'),
+                         collection_class=attribute_mapped_collection('keyword'),
                          backref="item",
                          cascade="all, delete-orphan")
 

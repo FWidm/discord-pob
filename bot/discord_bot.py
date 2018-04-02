@@ -90,7 +90,7 @@ def parse_pob(author, content, minify=False):
             # print(build)
 
             # statistics.stats = {'a': "0", 'b': "1"}
-            print(",".join([role.name for role in author.roles]))
+            #print(",".join([role.name for role in author.roles]))
             repository.add_statistics(author.name, build, paste_key)
             embed = pob_output.generate_response(author, build, minified=minify)
 
