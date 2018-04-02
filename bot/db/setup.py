@@ -4,7 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # engine = create_engine('sqlite:///:memory:', echo=True)
-engine = create_engine('sqlite:///pob-discord.db', echo=True)
+engine = create_engine('sqlite:///pob_discord.db', echo=True)
 
 Base = declarative_base()
 

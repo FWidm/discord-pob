@@ -1,4 +1,4 @@
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from bot.db import setup
 from bot.db.model import BuildStatistics
@@ -35,18 +35,23 @@ def get_overview(classes: [str], role=None):
     rowcount = session.query(BuildStatistics).count()
     str = ""
     # todo: add user role check
-    if len(classes) == 0:
-        asc_count = session.query(BuildStatistics.ascendency, func.count(BuildStatistics.id)). \
-            group_by(BuildStatistics.ascendency).all()
-        for asc in asc_count:
-            str += "{}:\t {}/{} ({:.2f}%)\n".format(asc[0], asc[1], rowcount, asc[1] / rowcount)
-    else:
-        for arg in classes:
-            asc_count = session.query(BuildStatistics.ascendency, func.count(BuildStatistics.id)). \
-                group_by(BuildStatistics.ascendency).filter(
-                func.lower(BuildStatistics.ascendency).contains(arg.lower())).all()
-            for asc in asc_count:
-                str += "{}:\t {}/{} ({:.2f}%)\n".format(asc[0], asc[1], rowcount, asc[1] / rowcount)
-        if not str:
-            str = "No entry found. Input was: '{}'".format(','.join(classes))
-    return str
+    result_set = None
+    print(classes, rowcount)
+    result_set = get_ascendency_count(classes)
+    print(result_set)
+    for asc in result_set:
+        str += "{}:\t {}/{} ({:.2f}%)\n".format(asc[0], asc[1], rowcount, asc[1] / rowcount)
+
+    return "No results found." if not str else str
+
+
+def get_ascendency_count(classes=None):
+    query = session.query(BuildStatistics.ascendency, func.count(BuildStatistics.id)).group_by(
+        BuildStatistics.ascendency)
+    filters = []
+    if len(classes) > 0:
+        for asc in classes:
+            filters.append(BuildStatistics.ascendency.ilike('%'+asc+'%'))
+        if len(filters) > 0:
+            query = query.filter(or_(*filters))
+    return query.all()

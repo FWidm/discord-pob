@@ -41,7 +41,7 @@ async def show():
 
 @bot.command(pass_context=True)
 async def overview(ctx, *classes):
-    str = repository.get_overview(classes)
+    str = repository.get_overview(list(classes))
     await bot.say(str)
 
 @bot.event
