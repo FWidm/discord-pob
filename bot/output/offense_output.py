@@ -1,5 +1,5 @@
 from bot.consts.thresholds import OutputThresholds
-from models import Skill
+from models.skill import Skill
 
 
 def calc_max(comparison_dps: []):

@@ -1,7 +1,9 @@
 import unittest
 import defusedxml.ElementTree as ET
 from bot.pob_parser import parse_build
-from models import Build, Skill, Gem
+from models.build import Build
+from models.gem import Gem
+from models.skill import Skill
 
 
 def load_test_build(file='in/jugg_tectonic.xml'):

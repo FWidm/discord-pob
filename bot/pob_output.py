@@ -5,6 +5,7 @@ from bot.output import defense_output, config_output, charges_output, skill_outp
 from models.build import Build
 from models.gem import Gem
 from models.skill import Skill
+from util.discord_util import parse_nick_or_name
 
 
 def create_embed(author, level, ascendency_name, class_name, main_skill: Skill):
@@ -36,14 +37,7 @@ def create_embed(author, level, ascendency_name, class_name, main_skill: Skill):
         gem=gem_name,
         level=level)
     if author:
-        displayed_name=None
-        try:
-            displayed_name = author.nick
-        except AttributeError:
-            pass
-        if not displayed_name:
-            displayed_name = author.name
-
+        displayed_name=parse_nick_or_name(author)
         if displayed_name:
             embed.title += " by: " + displayed_name
     return embed

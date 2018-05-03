@@ -17,13 +17,15 @@ def add_statistics(name: str, build: Build, paste_key: str, role=None):
     :return:
     """
     if not is_duplicate(paste_key):
+        gem_name=build.get_active_skill().get_selected().name
         statistics = BuildStatistics(author=name, role=role, character=build.class_name,
-                                     ascendency=build.ascendency_name, main_skill=build.get_active_gem_name(),
+                                     ascendency=build.ascendency_name, main_skill=gem_name,
                                      level=build.level, paste_key=paste_key)
-        statistics.stats = {
-            'a': Stat("a", "demoa"),
-            'b': Stat("b", "demob")
-        }
+        # statistics.stats = {
+        #     'Life': Stat("a", build.get_stat("Player","Life")),
+        #     'ES': Stat("b", build.get_stat("Player","EnergyShield")),
+        #     'Mana': Stat("Mana", build.get_stat("Player","Mana")),
+        # }
         session.add(statistics)
         session.commit()
         # print(session.query(BuildStatistics).first().stats)
@@ -45,7 +47,7 @@ def get_overview(classes: [str], role=None):
     result_set = get_ascendency_count(classes)
     # print(result_set)
     for asc in result_set:
-        str += "{}:\t {}/{} ({:.2f}%)\n".format(asc[0], asc[1], rowcount, asc[1] / rowcount)
+        str += "{}:\t {}/{} ({:.2f}%)\n".format(asc[0], asc[1], rowcount, 100* asc[1] / rowcount)
 
     return "No results found." if not str else str
 

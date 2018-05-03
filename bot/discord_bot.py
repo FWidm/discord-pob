@@ -1,4 +1,5 @@
 import asyncio
+import random
 from urllib.error import HTTPError
 
 import discord
@@ -12,6 +13,7 @@ from bot import pob_parser
 from bot.db.model import BuildStatistics
 from util import pastebin
 from util import pastebin, chat_logging
+from util.discord_util import parse_nick_or_name
 from util.logging import log
 from bot.db import repository
 
@@ -69,17 +71,12 @@ async def pob(ctx, *, key):
         # await ctx.say(arg)
 
 
-@bot.command(name='show all')
-async def show():
-    # buildstats = session.query(BuildStatistics).all()
-    buildstats = "Not implemented."
-    await bot.say("DB Content: {}".format(buildstats))
-
-
 @bot.command(pass_context=True)
 async def overview(ctx, *classes):
-    str = repository.get_overview(list(classes))
-    await bot.say(str)
+    if config.allow_pming and ctx.message.channel.is_private:
+        str = repository.get_overview(list(classes))
+        await bot.send_message(ctx.message.author, str)
+
 
 @bot.command()
 async def export_logs():
@@ -125,10 +122,11 @@ def parse_pob(author, content, minify=False):
     :param argument: optional: arguments to determine the output
     :return: Embed
     """
-    paste_key = pastebin.fetch_paste_key(content)
-    if paste_key:
+    paste_keys = pastebin.fetch_paste_key(content)
+    if len(paste_keys) >= 1:
         xml = None
-        log.info("Parsing pastebin with key={} from author={}".format(paste_key,author))
+        paste_key = random.choice(paste_keys)
+        log.info("Parsing pastebin with key={} from author={}, other keys={}".format(paste_key, author, paste_keys))
 
         try:
             xml = pastebin.get_as_xml(paste_key)
@@ -140,9 +138,10 @@ def parse_pob(author, content, minify=False):
             try:
                 embed = pob_output.generate_response(author, build, minified=minify)
                 log.debug("embed={}; thumbnail={}; length={}".format(embed, embed.thumbnail, embed.__sizeof__()))
+                displayed_name = parse_nick_or_name(author)
+
+                repository.add_statistics(displayed_name, build, paste_key, role=None)
                 return embed
             except Exception as e:
                 log.error("Could not parse pastebin={} - Exception={}, Msg={}".format(paste_key, type(e).__name__, e))
-                # raise e
-
-
+                raise e

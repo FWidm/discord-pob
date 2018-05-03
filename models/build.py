@@ -28,18 +28,19 @@ class Build:
         # print("owner_key={}; key={}, val={}".format(stat_owner, key, val))
 
     def append_conf(self, key, val):
-        conf_enry = pob_conf.fetch_entry(key)
+        conf_entry = pob_conf.fetch_entry(key)
         # ignore unknown settings.
-        if conf_enry:
+        if conf_entry:
             self.config[key] = {'value': val}
-            self.config[key].update(conf_enry)
+            self.config[key].update(conf_entry)
 
     def __repr__(self) -> str:
         return "{}".format(self.__dict__)
 
     def get_item(self, slot):
-        if slot:
-            return self.item_slots[slot].item
+        item_slot = self.item_slots.get(slot)
+        if item_slot:
+            return item_slot.item
 
     def get_stat(self, owner, key, threshold=0):
         if owner in self.stats and key in self.stats[owner]:
@@ -62,10 +63,3 @@ class Build:
         if len(self.skills) < 1 or self.active_skill_id < 1:
             return None
         return self.skills[self.active_skill_id - 1]
-
-    def get_active_gem_name(self):
-        gem_name = "Undefined"
-        main_gem = self.get_active_skill().get_selected()
-        if isinstance(main_gem, Gem):
-            gem_name = main_gem.name
-        return gem_name
