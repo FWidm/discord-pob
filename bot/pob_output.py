@@ -7,10 +7,6 @@ from models.gem import Gem
 from models.skill import Skill
 
 
-def wrap_codeblock(string, lang='css'):
-    return '```' + lang + '\n' + string + '```'
-
-
 def create_embed(author, level, ascendency_name, class_name, main_skill: Skill):
     """
     Create the basic embed we add information to
@@ -29,6 +25,7 @@ def create_embed(author, level, ascendency_name, class_name, main_skill: Skill):
         if isinstance(main_gem, Gem):
             gem_name = main_gem.name
 
+
     if ascendency_name or class_name:
         url = 'https://raw.githubusercontent.com/FWidm/discord-pob/master/_img/' + (
             ascendency_name if ascendency_name != "None" else class_name) + '.png'
@@ -39,7 +36,16 @@ def create_embed(author, level, ascendency_name, class_name, main_skill: Skill):
         gem=gem_name,
         level=level)
     if author:
-        embed.title += " by: " + (author.nick if author.nick else author.name)
+        displayed_name=None
+        try:
+            displayed_name = author.nick
+        except AttributeError:
+            pass
+        if not displayed_name:
+            displayed_name = author.name
+
+        if displayed_name:
+            embed.title += " by: " + displayed_name
     return embed
 
 

@@ -1,7 +1,8 @@
 from bot.consts.thresholds import OutputThresholds
+from models import Skill
 
 
-def calc_dps(comparison_dps: []):
+def calc_max(comparison_dps: []):
     """
     Get the max value out of all values in the list when they are set.
     :param comparison_dps:
@@ -14,27 +15,50 @@ def calc_dps(comparison_dps: []):
     return round(max, 2)
 
 
+def show_avg_damage(active_skill: Skill) -> bool:
+    """
+    Determine if we have to show avg damage instead of dps (useful for mines and traps)
+    :param build:
+    :return: boolean
+    """
+    if active_skill:
+        show_avg = any("mine" in gem.name.lower() for gem in active_skill.gems)
+        show_avg = show_avg or any("trap" in gem.name.lower() for gem in active_skill.gems)
+        show_avg = show_avg or any(
+            "firestorm" in gem.name.lower() or "ice storm" in gem.name.lower() for gem in active_skill.gems)
+
+        return show_avg
+
+
 def get_offense(build):
     output = ""
     # Basics
     comparison_dps = [build.get_stat('Player', 'TotalDPS'), build.get_stat('Player', 'WithPoisonDPS'),
                       build.get_stat('Minion', 'TotalDPS'), build.get_stat('Minion', 'WithPoisonDPS')]
+    comparison_avg = [build.get_stat('Player', 'WithPoisonAverageDamage')]
+    dps = calc_max(comparison_dps)
+    avg = calc_max(comparison_avg)
 
-    dps = calc_dps(comparison_dps)
-    output += "**DPS**: {dps:,} @ {speed}/s\n".format(
-        dps=dps,
-        speed=round(build.stats['Player']['Speed'], 2))
+    if dps > 0 or avg > 0:
+        speed = build.get_stat('Player', 'Speed')
+        if show_avg_damage(build.get_active_skill()) or avg > dps:
+            output += "**AVG**: {avg:,.0f}\n".format(
+                avg=avg)
+        else:
+            output += "**DPS**: {dps:,.0f} @ {speed}/s\n".format(
+                dps=dps,
+                speed=round(speed, 2) if speed else 0)
 
-    crit_chance = build.stats['Player']['CritChance']
-    crit_multi = build.stats['Player']['CritMultiplier'] * 100
-    if crit_chance > OutputThresholds.CRIT_CHANCE.value:
-        output += "**Crit**: Chance {crit_chance:,.2f}% | Multiplier: {crit_multi:,.0f}%\n".format(
-            crit_chance=crit_chance,
-            crit_multi=crit_multi)
+        crit_chance = build.get_stat('Player', 'CritChance', )
+        crit_multi = build.get_stat('Player', 'CritMultiplier')
+        if crit_chance and crit_chance > OutputThresholds.CRIT_CHANCE.value:
+            output += "**Crit**: Chance {crit_chance:,.2f}% | Multiplier: {crit_multi:,.0f}%\n".format(
+                crit_chance=crit_chance,
+                crit_multi=crit_multi * 100 if crit_multi else 150)
 
-    acc = build.stats['Player']['HitChance']
-    if acc < OutputThresholds.ACCURACY.value:
-        output += "**Hit Chance**: {:.2f}%".format(acc)
+        acc = build.get_stat('Player', 'HitChance', )
 
-    # todo: make a toggle for dot/hits
-    return output
+        if acc and acc < OutputThresholds.ACCURACY.value:
+            output += "**Hit Chance**: {:.2f}%".format(acc)
+
+        return output
