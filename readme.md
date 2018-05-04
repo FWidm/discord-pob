@@ -28,7 +28,7 @@
 - Add support for Keystones
     - Add support for Endu/Frenzy/Power Charges
     - Number of totems
-- Add support for "Notable" Uniques that are displayed in the extended version
+- Add support for "Notable" Uniques that are displayed in the extended version or in dm's
 - !pob `manually input build name here` <pob link>
 
 ### How To Run

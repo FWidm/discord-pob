@@ -3,6 +3,7 @@ import random
 from urllib.error import HTTPError
 
 import discord
+import os
 from discord.ext import commands
 from discord.ext.commands import CommandInvokeError
 
@@ -10,51 +11,49 @@ import config
 import util
 from bot import pob_output
 from bot import pob_parser
-from bot.db.model import BuildStatistics
+
 from util import pastebin
-from util import pastebin, chat_logging
 from util.discord_util import parse_nick_or_name
 from util.logging import log
 from bot.db import repository
+import defusedxml.ElementTree as ET
 
 bot = commands.Bot(command_prefix='!', description="x")
 bot.remove_command('help')
 
 
-async def export_dm_logs():
-    while not bot.is_closed:
-
-        log.info("Exporting all DMs. channels: {}".format(len(bot.private_channels)))
-
-        for ch in bot.private_channels:
-            recipient = ch.recipients[0]
-            if recipient:
-                latest_date = chat_logging.get_latest_date_utc(recipient)
-                msgs = []
-                async for msg in bot.logs_from(ch, after=latest_date):
-                    if not msg.author.bot:
-                        msgs.append(msg)
-
-                # print("Msgs={}".format(msgs))
-                chat_logging.write_to_file(recipient, msgs)
-
-        await asyncio.sleep(config.dm_poll_rate_seconds)  # task runs every x seconds
-
-
-async def trigger_export_logs():
-    await bot.wait_until_login()
-    await export_dm_logs()
-
-
-if config.dm_auto_log:
-    bot.loop.create_task(export_dm_logs())
+def load_examples():
+    pastebins = open(os.path.join('in', 'pastebins.txt')).readlines()
+    for paste in pastebins:
+        parse_pob("X", paste, False)
 
 
 @bot.event
 async def on_ready():
     log.info('Logged in: uname={}, id={}'.format(bot.user.name, bot.user.id))
+    # load_examples()
     if config.presence_message:
         await bot.change_presence(game=discord.Game(name=config.presence_message))
+
+
+@bot.command()
+async def load(extension_name: str):
+    """Loads an extension."""
+    try:
+        bot.load_extension(extension_name)
+    except (AttributeError, ImportError) as e:
+        await bot.say("```py\n{}: {}\n```".format(type(e).__name__, str(e)))
+        return
+    await bot.say("{} loaded.".format(extension_name))
+
+
+@bot.command(pass_context=True)
+@commands.cooldown(1, 5, commands.BucketType.user)
+async def help(ctx):
+    if ctx.message.channel.is_private:
+        await bot.send_message(ctx.message.author,
+                               "Paste your pastebin here for a quick overview or use `!pob <pastebin link>` for a detailed response. "
+                               "Alternatively get an overview about parsed pastebins by using `!overview` or search for builds with `!find`.")
 
 
 @bot.command(pass_context=True)
@@ -62,25 +61,13 @@ async def on_ready():
 async def pob(ctx, *, key):
     if not config.allow_pming and ctx.message.channel.is_private:
         return
-    embed = parse_pob(ctx.message.author, ctx.message.content)
+    embed = parse_pob(parse_nick_or_name(ctx.message.author), ctx.message.content)
     try:
         if embed:
             await bot.send_message(ctx.message.channel, embed=embed)
     except discord.Forbidden:
         log.info("Tried pasting in channel without access.")
         # await ctx.say(arg)
-
-
-@bot.command(pass_context=True)
-async def overview(ctx, *classes):
-    if config.allow_pming and ctx.message.channel.is_private:
-        str = repository.get_overview(list(classes))
-        await bot.send_message(ctx.message.author, str)
-
-
-@bot.command()
-async def export_logs():
-    await export_dm_logs()
 
 
 @bot.event
@@ -97,16 +84,13 @@ async def on_message(message):
     if message.author.bot:
         return
 
-    if config.allow_pming and message.channel.is_private and 'help' in message.content.lower():
-        await bot.send_message(message.channel,
-                               "Paste your pastebin here for a quick overview or use '!pob <pastebin>' for a detailled respoonse.")
     if (message.channel.name in config.active_channels or (message.channel.is_private and config.allow_pming)) \
             and not util.starts_with("!pob", message.content[:4]) \
             and "pastebin.com/" in message.content:
         # check if valid xml
         # send message
         log.debug("A| {}: {}".format(message.channel, message.content))
-        embed = parse_pob(message.author, message.content, minify=True)
+        embed = parse_pob(parse_nick_or_name(message.author), message.content, minify=True)
         if embed:
             await bot.send_message(message.channel, embed=embed)
     else:
@@ -136,11 +120,10 @@ def parse_pob(author, content, minify=False):
             build = pob_parser.parse_build(xml)
             # print(build)
             try:
-                embed = pob_output.generate_response(author, build, minified=minify)
+                embed = pob_output.generate_response(parse_nick_or_name(author), build, minified=minify)
                 log.debug("embed={}; thumbnail={}; length={}".format(embed, embed.thumbnail, embed.__sizeof__()))
-                displayed_name = parse_nick_or_name(author)
 
-                repository.add_statistics(displayed_name, build, paste_key, role=None)
+                repository.add_statistics(author, build, paste_key, role=None, category="DEMO")
                 return embed
             except Exception as e:
                 log.error("Could not parse pastebin={} - Exception={}, Msg={}".format(paste_key, type(e).__name__, e))

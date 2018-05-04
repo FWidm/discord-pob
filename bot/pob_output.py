@@ -8,7 +8,7 @@ from models.skill import Skill
 from util.discord_util import parse_nick_or_name
 
 
-def create_embed(author, level, ascendency_name, class_name, main_skill: Skill):
+def create_embed(author:str, level, ascendency_name, class_name, main_skill: Skill):
     """
     Create the basic embed we add information to
     :param author: of the parsed message - str
@@ -37,13 +37,11 @@ def create_embed(author, level, ascendency_name, class_name, main_skill: Skill):
         gem=gem_name,
         level=level)
     if author:
-        displayed_name=parse_nick_or_name(author)
-        if displayed_name:
-            embed.title += " by: " + displayed_name
+        embed.title += " by: " + author
     return embed
 
 
-def generate_response(author, build: Build, minified=False):
+def generate_response(author:str, build: Build, minified=False):
     """
     Build an embed to respond to the user.
     :param author: name of the person triggering the action

@@ -1,5 +1,8 @@
 def parse_nick_or_name(author):
     displayed_name = None
+    if isinstance(author, str):
+        return author
+
     try:
         displayed_name = author.nick
     except AttributeError:

@@ -15,6 +15,7 @@ class BuildStatistics(Base):
     main_skill = Column(String(20))
     level = Column(Integer)
     paste_key = Column(String(20))
+    category = Column(String(20))
     stats = relationship("Stat",
                          collection_class=attribute_mapped_collection('keyword'),
                          backref="item",
